@@ -870,4 +870,309 @@ class MyDrawPanel extends JPanel{
 
 }
 ```
+绘制一个小动画，移动的圆
 
+```java
+import javax.swing.*;
+import java.awt.*;
+
+public class Main {
+    int x = 70;
+    int y = 70;
+
+    public static void main(String[] args){
+        Main main = new Main();
+        main.go();
+    }
+    public void go() {
+        JFrame frame = new JFrame();
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+        MyDrawPanel drawPanel = new MyDrawPanel();
+
+        frame.getContentPane().add(drawPanel);
+        frame.setSize(300,300);
+        frame.setVisible(true);
+
+        for (int i = 0;i < 130;i++){
+            x++;
+            y++;
+
+            drawPanel.repaint();
+
+            try{Thread.sleep(50);
+            }catch (Exception ex){}
+
+        }
+    }
+    class MyDrawPanel extends JPanel{
+        public void paintComponent(Graphics g){
+            g.fillRect(0,0,this.getWidth(),this.getHeight());
+
+            int red = (int)(Math.random()*255);
+            int green = (int)(Math.random()*255);
+            int blue = (int)(Math.random()*255);
+
+            Color randomColor = new Color(red,green,blue);
+            g.setColor(randomColor);
+            g.fillOval(x,y,100,100);
+        }
+    }
+}
+```
+
+midi随机图像编程略过
+## Swing学习
+略过，beatbox同略过
+# 011 输入输出
+## 存储对象
+
+ - 序列化存储（易于程序恢复）
+ - 写入纯文本文件（可读性好）
+对象的序列化存储：
+ object 写入 objectOutputStream 链接到 FileOutputStream 到文件（.ser文件）
+
+```java
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
+
+public class Main implements Serializable {
+//继承Serializable表示能够序列化
+    private int width;
+    private int height;
+
+    public void setWidth(int w){
+        width = w;
+    }
+    public void setHeight(int h){
+        height = h;
+    }
+    public static void main(String[] args){
+        Main mymain = new Main();
+        mymain.setHeight(21);
+        mymain.setWidth(14);
+
+        try{
+            FileOutputStream fs = new FileOutputStream("foo.ser");
+            ObjectOutputStream os = new ObjectOutputStream(fs);
+            os.writeObject(mymain);
+            os.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
+```
+
+ - 序列化要求实例包含的所有类和变量
+ - 不想被序列化保存的变量用transient（意思为瞬时的）
+## split函数
+
+```java
+class Main{
+    public static void main(String[] args){
+        String sample = "hello / world";
+        String[] result = sample.split("/");
+        for(String token:result){
+            //token 用于遍历
+            System.out.println(token);
+        }
+    }
+}
+```
+略编程
+# 012 网络编程
+获取电脑ip和名称
+
+```java
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+
+class Main{
+    public static void main(String[] args) throws UnknownHostException {
+        InetAddress allByName = InetAddress.getByName("LAPTOP-TFS4VC7P");
+        System.out.println(allByName);
+
+    }
+}
+```
+udp协议发送数据
+
+```java
+import java.io.IOException;
+import java.net.*;
+
+class Main{
+    public static void main(String[] args) throws IOException {
+        InetAddress allByName = InetAddress.getByName("LAPTOP-TFS4VC7P");
+        System.out.println(allByName);
+        DatagramSocket Ds = new DatagramSocket(10086);
+        String data = "hello";
+        byte[] dataBytes = data.getBytes();
+        DatagramPacket Dp = new DatagramPacket(dataBytes,dataBytes.length, InetAddress.getByName(allByName.getHostAddress()),10086);
+        Ds.send(Dp);
+        Ds.close();
+    }
+}
+```
+实现udp的接受和发送
+一对代码
+
+```java
+//接收
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.SocketException;
+
+public class receive {
+    public static void main(String[] args) throws IOException {
+        DatagramSocket ds = new DatagramSocket(28889);
+        //接受时一定要指定端口
+        byte[] bytes = new byte[1023];
+        DatagramPacket dp = new DatagramPacket(bytes,bytes.length);
+        ds.receive(dp);
+
+        InetAddress address = dp.getAddress();
+        byte[] data = dp.getData();
+        int length = dp.getLength();
+        int port = dp.getPort();
+        System.out.println("接收数据：" +new String(data,0,length));
+        System.out.println("数据从ip：" + address.getHostAddress() + "从端口" + port + "发出的");
+
+        ds.close();
+
+    }
+}
+
+```
+
+```java
+import java.io.IOException;
+import java.net.*;
+
+class Main{
+    public static void main(String[] args) throws IOException {
+        //主机ip = 169.254.13.166
+        InetAddress allByName = InetAddress.getByName("LAPTOP-TFS4VC7P");
+        System.out.println(allByName);
+        DatagramSocket Ds = new DatagramSocket();
+        String data = "hello";
+        byte[] dataBytes = data.getBytes();
+        DatagramPacket Dp = new DatagramPacket(dataBytes,dataBytes.length, InetAddress.getByName("169.254.13.166"),28889);
+        Ds.send(Dp);
+        Ds.close();
+    }
+}
+```
+## TCP协议接发联系
+一对代码
+
+```java
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.ServerSocket;
+import java.net.Socket;
+
+public class receive {
+    public static void main(String[] args) throws IOException {
+        ServerSocket serverSocket = new ServerSocket(10086);
+        Socket accept = serverSocket.accept();
+        InputStream inputStream = accept.getInputStream();
+        InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
+        // 字节流 字符流 缓冲流
+        //本代码为字符流
+        int b;
+        while ((b = inputStreamReader.read()) != -1){
+            System.out.print((char)b);
+        }
+        inputStream.close();
+        serverSocket.close();
+    }
+}
+
+```
+
+```java
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.InetAddress;
+import java.net.Socket;
+import java.net.UnknownHostException;
+
+public class Main{
+    public static void main(String[] args) throws IOException {
+        //主机ip = 169.254.13.166
+        InetAddress allByName = InetAddress.getByName("LAPTOP-TFS4VC7P");
+        System.out.println(allByName);
+        Socket socket = new Socket(allByName.getHostAddress(),10086);
+        OutputStream outputStream = socket.getOutputStream();
+        outputStream.write("你好中国".getBytes());
+
+        outputStream.close();
+        socket.close();
+    }
+}
+```
+## 多线程
+实现多线程有三种方式
+
+ - 继承Thread类（最简单）
+ - 使用Runnable接口
+ - Callable接口和Future接口（扩展性好，能获得返回值）
+
+```java
+public class Main extends Thread{
+    public static void main(String[] args){
+        Main main = new Main();
+        main.start();
+    }
+    public void run(){
+        System.out.println("hello");
+    }
+}
+```
+## 同步问题
+三个窗口卖100张票
+
+```java
+class Buy extends Thread{
+    static int tickets = 0;
+    static  Object object = new Object();
+
+    public void run(){
+        while (true) {
+            synchronized (object) {
+                if (tickets < 100) {
+                    try {
+                        Thread.sleep(10);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                    tickets++;
+                    System.out.println(getName() + "卖出第" + tickets + "张票");
+                }
+            }
+        }
+    }
+}
+public class Main{
+    public static void main(String[] args){
+        Buy buy1 = new Buy();
+        Buy buy2 = new Buy();
+        Buy buy3 = new Buy();
+        buy1.start();
+        buy2.start();
+        buy3.start();
+    }
+}
+```
+## 013 数据结构
+泛型
+## 014 包
+## 015 分布式计算
